@@ -21,7 +21,7 @@ async fn main() -> Result<()> {
         .build();
 
     let request = Client::new()
-        .get(format!("{}/1", server.url()))
+        .get("https://example.com")
         .build()
         .unwrap();
 

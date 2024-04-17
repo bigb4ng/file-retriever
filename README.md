@@ -48,6 +48,6 @@ cargo run --example multi_download_example  -- -i ./examples/in/ -o ./examples/o
 ## Tests
 You can execute tests with:
 ```bash
-cargo test
+cargo test --lib
 ```
 which will create fetch files from mock server to `/tmp/` directory

@@ -1,0 +1,3 @@
+https://example.com/index.html
+https://example.com/ab/404.html
+https://example.com/404.jpg

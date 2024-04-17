@@ -1,2 +1,4 @@
 /target
 /out
+/examples/out/*
+!/examples/out/.gitkeep

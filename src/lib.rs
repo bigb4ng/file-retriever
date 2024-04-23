@@ -18,7 +18,7 @@ type Result<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>
 ///
 /// ```
 /// use reqwest::Client;
-/// use retriever::RetrieverBuilder;
+/// use file_retriever::RetrieverBuilder;
 /// use tokio::fs::OpenOptions;
 ///
 /// #[tokio::main]
@@ -113,7 +113,7 @@ impl RetrieverBuilder {
 ///
 /// ```
 /// use reqwest::Client;
-/// use retriever::Retriever;
+/// use file_retriever::Retriever;
 /// use tokio::fs::OpenOptions;
 ///
 /// #[tokio::main]

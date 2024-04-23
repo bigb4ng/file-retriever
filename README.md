@@ -12,7 +12,7 @@ Multiple examples are available in [src/lib.rs](https://github.com/bigb4ng/retri
 ### Single file download
 ```rust
 use reqwest::Client;
-use retriever::{self, RetrieverBuilder};
+use file_retriever::{self, RetrieverBuilder};
 use tokio::fs::OpenOptions;
 
 #[tokio::main]

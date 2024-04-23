@@ -1,8 +1,12 @@
 [package]
-name = "retriever"
+name = "file-retriever"
 version = "0.1.0"
 edition = "2021"
-repository = "https://github.com/bigb4ng/retriever"
+repository = "https://github.com/bigb4ng/file-retriever"
+description = "Concurrent download library with progress bar"
+documentation = "https://docs.rs/file-retriever"
+keywords = ["file_downloader", "downloader", "download", "requests", "http"]
+categories = ["web-programming::http-client", "asynchronous"]
 readme = "README.md"
 license = "MIT"
 

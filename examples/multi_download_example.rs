@@ -1,6 +1,6 @@
 use argh::FromArgs;
 use reqwest::Client;
-use retriever::{self, RetrieverBuilder};
+use file_retriever::{self, RetrieverBuilder};
 use std::ffi::OsStr;
 use std::fs;
 use std::path::PathBuf;

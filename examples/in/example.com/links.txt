@@ -1,3 +1,5 @@
-https://example.com/index.html
-https://example.com/ab/404.html
-https://example.com/404.jpg
+https://cdn.kernel.org/pub/linux/kernel/v6.x/patch-6.8.7.xz
+https://cdn.kernel.org/pub/linux/kernel/v6.x/patch-6.7.12.xz
+https://cdn.kernel.org/pub/linux/kernel/v5.x/patch-5.15.156.xz
+https://cdn.kernel.org/pub/linux/kernel/v5.x/patch-5.4.274.xz
+https://cdn.kernel.org/pub/linux/kernel/v4.x/patch-4.19.312.xz

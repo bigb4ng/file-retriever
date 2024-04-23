@@ -4,6 +4,8 @@ A rust library for downloading files from the web. You can download multiple fil
 The library is built on top of [reqwest](https://github.com/seanmonstar/reqwest) and [tokio](https://github.com/tokio-rs/tokio).
 It also utilizes [indicatif](https://github.com/console-rs/indicatif) for progress bars.
 
+<img src="https://github.com/bigb4ng/retriever/assets/130478744/0fabac9e-961e-4e49-9733-94606f19024e" width="100%" />
+
 ## Examples
 Multiple examples are available in [src/lib.rs](https://github.com/bigb4ng/retriever/blob/main/src/lib.rs)
 

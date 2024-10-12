@@ -2,7 +2,7 @@
 name = "file-retriever"
 version = "0.1.1"
 edition = "2021"
-repository = "https://github.com/bigb4ng/file-retriever"
+repository = "https://github.com/bigb4ng/retriever"
 description = "Concurrent download library with progress bar"
 documentation = "https://docs.rs/file-retriever"
 keywords = ["file_downloader", "downloader", "download", "requests", "http"]

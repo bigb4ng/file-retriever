@@ -2,3 +2,4 @@
 /out
 /examples/out/*
 !/examples/out/.gitkeep
+.vscode

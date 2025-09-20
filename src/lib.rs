@@ -1,7 +1,7 @@
 #![deny(unsafe_code)]
 #![deny(missing_docs)]
 
-//! Asyncronous download with (optional) progress bar and limited amount of workers.
+//! Asynchronous download with (optional) progress bar and limited amount of workers.
 //!
 //! Retriever is based on tokio and reqwest crates dancing together in a beautiful tango.
 
@@ -107,7 +107,7 @@ impl RetrieverBuilder {
     }
 }
 
-/// Provies an easy interface for parallel downloads with limited workers and progress bar
+/// Provides an easy interface for parallel downloads with limited workers and progress bar
 ///
 /// # Examples
 ///

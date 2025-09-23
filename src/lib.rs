@@ -177,13 +177,18 @@ impl Retriever {
         let path = String::from(request.url().path());
         let mut resp = self.client.execute(request).await?;
 
-        let mut pb: ProgressBar = ProgressBar::hidden();
-        let content_len = resp.content_length();
-        if let Some(total_size) = content_len {
-            if let Some(m) = &self.mp {
-                if let Some(pb_style) = &self.pb_style {
+        let mut pb = ProgressBar::hidden();
+        if let Some(m) = &self.mp {
+            if let Some(pb_style) = &self.pb_style {
+                if let Some(total_size) = resp.content_length() {
                     pb = m.add(
                         ProgressBar::new(total_size)
+                            .with_style(pb_style.clone())
+                            .with_message(path),
+                    );
+                } else {
+                    pb = m.add(
+                        ProgressBar::no_length()
                             .with_style(pb_style.clone())
                             .with_message(path),
                     );
@@ -191,23 +196,18 @@ impl Retriever {
             }
         }
 
+        while let Some(chunk) = resp.chunk().await? {
+            writer.write_all(chunk.as_ref()).await?;
+            writer.flush().await?;
+
+            pb.inc(chunk.len() as u64);
+        }
+
+        pb.set_length(pb.position());
+        pb.finish();
+
         drop(_permit);
 
-        let disk_write = tokio::spawn(async move {
-            let mut written: u64 = 0;
-            while let Some(chunk) = resp.chunk().await.unwrap() {
-                writer.write_all(chunk.as_ref()).await.unwrap();
-                writer.flush().await.unwrap();
-                if let Some(_) = content_len {
-                    written += chunk.len() as u64;
-                    pb.set_position(written);
-                }
-            }
-
-            pb.finish();
-        });
-
-        let _ = tokio::join!(disk_write);
         Ok(())
     }
 }

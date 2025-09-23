@@ -34,7 +34,7 @@ type Result<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>
 ///         .create(true)
 ///         .write(true)
 ///         .truncate(true)
-///         .open(format!("index.html"))
+///         .open("index.html")
 ///         .await
 ///         .expect("should return file");
 ///
@@ -126,7 +126,7 @@ impl RetrieverBuilder {
 ///         .create(true)
 ///         .write(true)
 ///         .truncate(true)
-///         .open(format!("index.html"))
+///         .open("index.html")
 ///         .await
 ///         .expect("should return file");
 ///
@@ -224,7 +224,7 @@ mod tests {
         let mut server = mockito::Server::new_async().await;
 
         let mock = server
-            .mock("GET", Matcher::Regex(String::from("/\\d")))
+            .mock("GET", Matcher::Regex(r"/\d".to_string()))
             .with_status(200)
             .with_body("hello")
             .create();
@@ -237,28 +237,29 @@ mod tests {
         let req = Client::new()
             .get(format!("{}/1", server.url()))
             .build()
-            .unwrap();
+            .expect("failed to build request");
 
+        let file_path = "/tmp/test";
         let file = OpenOptions::new()
             .create(true)
             .write(true)
             .truncate(true)
-            .open("/tmp/test")
+            .open(file_path)
             .await
-            .unwrap();
+            .expect("failed to open file for writing");
 
-        let _ = retriever.download_file(req, file).await;
+        let _ = retriever.download_file(req, file).await.expect("failed to download");
 
-        let mut file2 = OpenOptions::new()
+        let mut file = OpenOptions::new()
             .read(true)
-            .open("/tmp/test")
+            .open(file_path)
             .await
-            .unwrap();
+            .expect("failed to open file for reading");
 
-        let mut s = String::new();
-        let _ = file2.read_to_string(&mut s).await;
+        let mut contents = String::new();
+        file.read_to_string(&mut contents).await.expect("failed to read file");
 
-        assert_eq!(s, "hello");
+        assert_eq!(contents, "hello");
 
         mock.assert();
     }
@@ -271,7 +272,7 @@ mod tests {
         let mut server = mockito::Server::new_async().await;
 
         let mock = server
-            .mock("GET", Matcher::Regex(String::from("/\\d")))
+            .mock("GET", Matcher::Regex(r"/\d".to_string()))
             .with_status(200)
             .with_body("hello")
             .expect(10)
@@ -286,7 +287,7 @@ mod tests {
             let req = Client::new()
                 .get(format!("{}/{}", server.url(), i))
                 .build()
-                .unwrap();
+                .expect("request should build");
 
             let file = OpenOptions::new()
                 .create(true)

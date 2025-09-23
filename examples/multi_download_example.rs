@@ -1,6 +1,6 @@
 use argh::FromArgs;
-use reqwest::Client;
 use file_retriever::{self, RetrieverBuilder};
+use reqwest::Client;
 use std::ffi::OsStr;
 use std::fs;
 use std::path::PathBuf;
@@ -49,7 +49,7 @@ async fn main() -> Result<()> {
     let retriever = Arc::new(
         RetrieverBuilder::new()
             .show_progress(true)
-            .workers(10)
+            .workers(2)
             .build(),
     );
 
@@ -95,33 +95,6 @@ async fn main() -> Result<()> {
                     .header("User-Agent", params_clone.user_agent.as_bytes())
                     .build()
                     .unwrap();
-                retriever_clone.download_file(req, file).await
-            });
-        }
-        
-        let stories_strings = read_lines(dir_entry.path().join("stories.txt").as_os_str());
-        for url_string in stories_strings {
-            let retriever_clone = Arc::clone(&retriever);
-            let dir_entry_clone = Arc::clone(&dir_entry);
-            let params_clone = Arc::clone(&params);
-
-            set.spawn(async move {
-                let url = Url::parse(url_string.as_str()).expect("should parse");
-    
-                let path: PathBuf = [OsStr::new("./out"), dir_entry_clone.file_name().as_os_str(), OsStr::new("stories"), OsStr::new(url.path_segments().unwrap().last().unwrap())].into_iter().collect();
-                if path.exists() {
-                    return Ok(());
-                }
-                
-                std::fs::create_dir_all(path.parent().unwrap().as_os_str())?;
-    
-                let file = OpenOptions::new()
-                    .create(true)
-                    .write(true)
-                    .truncate(true)
-                    .open(path.as_os_str())
-                    .await?;
-                let req = Client::new().get(url.as_str()).header("User-Agent", params_clone.user_agent.as_bytes()).build().unwrap();
                 retriever_clone.download_file(req, file).await
             });
         }

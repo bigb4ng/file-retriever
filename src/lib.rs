@@ -248,7 +248,10 @@ mod tests {
             .await
             .expect("failed to open file for writing");
 
-        let _ = retriever.download_file(req, file).await.expect("failed to download");
+        let _ = retriever
+            .download_file(req, file)
+            .await
+            .expect("failed to download");
 
         let mut file = OpenOptions::new()
             .read(true)
@@ -257,7 +260,9 @@ mod tests {
             .expect("failed to open file for reading");
 
         let mut contents = String::new();
-        file.read_to_string(&mut contents).await.expect("failed to read file");
+        file.read_to_string(&mut contents)
+            .await
+            .expect("failed to read file");
 
         assert_eq!(contents, "hello");
 

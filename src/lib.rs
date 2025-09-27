@@ -147,24 +147,14 @@ pub struct Retriever {
 impl Default for Retriever {
     /// Create a default retriever with 10 workers
     fn default() -> Self {
-        Self {
-            client: reqwest::Client::new(),
-            job_semaphore: Semaphore::new(10),
-            mp: None,
-            pb_style: None,
-        }
+        RetrieverBuilder::new().build()
     }
 }
 
 impl Retriever {
     /// Same as default retriever but showing progress bar
     pub fn with_progress_bar() -> Self {
-        Self {
-            client: reqwest::Client::new(),
-            job_semaphore: Semaphore::new(10),
-            mp: Some(MultiProgress::new()),
-            pb_style: None,
-        }
+        RetrieverBuilder::new().show_progress(true).build()
     }
 
     /// Makes a request using a request and writes output into writer

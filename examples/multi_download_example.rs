@@ -1,23 +1,15 @@
 use argh::FromArgs;
 use file_retriever::{self, RetrieverBuilder};
 use reqwest::Client;
-use std::ffi::OsStr;
-use std::fs;
-use std::path::PathBuf;
+use std::path::Path;
 use std::sync::Arc;
-use tokio::fs::OpenOptions;
+use tokio::fs;
+use tokio::fs::{File, OpenOptions};
+use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::task::JoinSet;
 use url::Url;
 
 type Result<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>>;
-
-fn read_lines(filename: &OsStr) -> Vec<String> {
-    fs::read_to_string(filename)
-        .unwrap_or_default()
-        .lines()
-        .map(String::from)
-        .collect()
-}
 
 #[derive(FromArgs)]
 /// A simple command line tool to fetch a list of URLs and save them to a files
@@ -42,47 +34,39 @@ struct FetchParams {
 #[tokio::main]
 async fn main() -> Result<()> {
     let params: Arc<FetchParams> = Arc::new(argh::from_env());
-
-    let mut set = JoinSet::new();
-
-    let paths = fs::read_dir(&params.input_dir)?;
     let retriever = Arc::new(
         RetrieverBuilder::new()
             .show_progress(true)
             .workers(2)
             .build(),
     );
+    let mut join_set = JoinSet::new();
 
-    for path in paths {
-        let dir_entry = Arc::new(path.unwrap());
-        let url_strings = read_lines(dir_entry.path().join("links.txt").as_os_str());
+    let mut dir_entries = fs::read_dir(&params.input_dir).await?;
+    while let Some(entry) = dir_entries.next_entry().await? {
+        let dir_entry = Arc::new(entry);
+        let file = File::open(dir_entry.path().join("links.txt")).await?;
+        let buf_reader = BufReader::new(file);
+        let mut lines = buf_reader.lines();
 
-        for url_string in url_strings {
+        while let Some(url_string) = lines.next_line().await? {
             let retriever_clone = Arc::clone(&retriever);
             let dir_entry_clone = Arc::clone(&dir_entry);
             let params_clone = Arc::clone(&params);
 
-            set.spawn(async move {
-                let url = Url::parse(url_string.as_str()).expect("URL should be valid");
+            join_set.spawn(async move {
+                let url = Url::parse(&url_string).expect("URL should be valid");
 
                 // will produce out/example/example.jpg for url https://example.com/a/b/c/example.jpg in out/example/links.txt
-                let path: PathBuf = [
-                    OsStr::new(&params_clone.output_dir),
-                    dir_entry_clone.file_name().as_os_str(),
-                    OsStr::new(
-                        url.path_segments()
+                let filename = url.path_segments()
                             .expect("URL must have path segments")
                             .last()
-                            .expect("URL must have filename part"),
-                    ),
-                ]
-                .into_iter()
-                .collect();
-                if path.exists() {
-                    return Ok(());
-                }
+                            .expect("URL must have filename part");
+                let path = Path::new(&params_clone.output_dir)
+                    .join(dir_entry_clone.file_name())
+                    .join(filename);
 
-                std::fs::create_dir_all(path.parent().unwrap().as_os_str())?;
+                fs::create_dir_all(path.parent().unwrap()).await?;
 
                 let file = OpenOptions::new()
                     .create(true)
@@ -94,13 +78,14 @@ async fn main() -> Result<()> {
                     .get(url.as_str())
                     .header("User-Agent", params_clone.user_agent.as_bytes())
                     .build()
-                    .unwrap();
+                    .expect("request should build");
+
                 retriever_clone.download_file(req, file).await
             });
         }
     }
 
-    while let Some(result) = set.join_next().await {
+    while let Some(result) = join_set.join_next().await {
         if let Ok(res) = result {
             if let Err(e) = res {
                 eprintln!("{:?}", e)

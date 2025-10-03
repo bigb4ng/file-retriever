@@ -5,6 +5,8 @@
 //!
 //! Retriever is based on tokio and reqwest crates dancing together in a beautiful tango.
 
+pub use indicatif::ProgressFinish;
+
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use reqwest::Request;
 use tokio::io::AsyncWriteExt;
@@ -46,15 +48,17 @@ type Result<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>
 /// }
 /// ```
 pub struct RetrieverBuilder {
+    workers: usize,
     show_progress_bar: bool,
     pb_style: Option<ProgressStyle>,
-    workers: usize,
+    pb_finish: ProgressFinish,
 }
 
 impl Default for RetrieverBuilder {
     /// Creates a new Retriever builder.
     fn default() -> Self {
         Self {
+            workers: 10,
             show_progress_bar: false,
             pb_style: Some(
                 ProgressStyle::with_template(
@@ -63,7 +67,7 @@ impl Default for RetrieverBuilder {
                 .expect("progress bar template should compile")
                 .progress_chars("=>-"),
             ),
-            workers: 10,
+            pb_finish: ProgressFinish::AndLeave,
         }
     }
 }
@@ -86,6 +90,12 @@ impl RetrieverBuilder {
         self
     }
 
+    /// Sets progress bar finish behavior.
+    pub fn with_finish(mut self, pb_finish: ProgressFinish) -> Self {
+        self.pb_finish = pb_finish;
+        self
+    }
+
     /// Sets the number of workers.
     pub fn workers(mut self, workers: usize) -> Self {
         self.workers = workers;
@@ -103,6 +113,7 @@ impl RetrieverBuilder {
                 None
             },
             pb_style: self.pb_style,
+            pb_finish: self.pb_finish,
         }
     }
 }
@@ -142,6 +153,7 @@ pub struct Retriever {
     job_semaphore: Semaphore,
     mp: Option<MultiProgress>,
     pb_style: Option<ProgressStyle>,
+    pb_finish: ProgressFinish,
 }
 
 impl Default for Retriever {
@@ -160,7 +172,7 @@ impl Retriever {
     /// Makes a request using a request and writes output into writer
     pub async fn download_file<W>(&self, request: Request, mut writer: W) -> Result<()>
     where
-        W: AsyncWriteExt + Unpin + Send + Sync + 'static,
+        W: AsyncWriteExt + Unpin,
     {
         let _permit = self.job_semaphore.acquire().await?;
 
@@ -170,18 +182,15 @@ impl Retriever {
         let mut pb = ProgressBar::hidden();
         if let Some(m) = &self.mp {
             if let Some(pb_style) = &self.pb_style {
+                pb = m.add(
+                    ProgressBar::no_length()
+                        .with_style(pb_style.clone())
+                        .with_message(path)
+                        .with_finish(self.pb_finish.clone()),
+                );
+
                 if let Some(total_size) = resp.content_length() {
-                    pb = m.add(
-                        ProgressBar::new(total_size)
-                            .with_style(pb_style.clone())
-                            .with_message(path),
-                    );
-                } else {
-                    pb = m.add(
-                        ProgressBar::no_length()
-                            .with_style(pb_style.clone())
-                            .with_message(path),
-                    );
+                    pb.set_length(total_size);
                 }
             }
         }
@@ -194,7 +203,7 @@ impl Retriever {
         }
 
         pb.set_length(pb.position());
-        pb.finish();
+        pb.finish_using_style();
 
         drop(_permit);
 
@@ -273,7 +282,16 @@ mod tests {
             .expect(10)
             .create();
 
-        let retriever = Arc::new(RetrieverBuilder::new().show_progress(true).build());
+        let retriever = Arc::new(
+            RetrieverBuilder::new()
+                .show_progress(true)
+                .progress_style(
+                    ProgressStyle::with_template("{bytes}/{total_bytes} {msg}")
+                        .expect("progress bar template should compile"),
+                )
+                .with_finish(ProgressFinish::WithMessage("done".into()))
+                .build(),
+        );
 
         let mut set = JoinSet::new();
 

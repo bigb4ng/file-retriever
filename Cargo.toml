@@ -1,6 +1,6 @@
 [package]
 name = "file-retriever"
-version = "0.1.4"
+version = "0.1.5"
 edition = "2021"
 repository = "https://github.com/bigb4ng/file-retriever"
 description = "Concurrent download library with progress bar"

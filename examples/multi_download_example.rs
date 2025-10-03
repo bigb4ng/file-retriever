@@ -58,10 +58,11 @@ async fn main() -> Result<()> {
                 let url = Url::parse(&url_string).expect("URL should be valid");
 
                 // will produce out/example/example.jpg for url https://example.com/a/b/c/example.jpg in out/example/links.txt
-                let filename = url.path_segments()
-                            .expect("URL must have path segments")
-                            .last()
-                            .expect("URL must have filename part");
+                let filename = url
+                    .path_segments()
+                    .expect("URL must have path segments")
+                    .last()
+                    .expect("URL must have filename part");
                 let path = Path::new(&params_clone.output_dir)
                     .join(dir_entry_clone.file_name())
                     .join(filename);

@@ -177,7 +177,7 @@ impl Retriever {
         let _permit = self.job_semaphore.acquire().await?;
 
         let path = String::from(request.url().path());
-        let mut resp = self.client.execute(request).await?;
+        let mut resp = self.client.execute(request).await?.error_for_status()?;
 
         let mut pb = ProgressBar::hidden();
         if let Some(m) = &self.mp {
@@ -214,8 +214,9 @@ impl Retriever {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use http::StatusCode;
     use mockito::Matcher;
-    use reqwest::Client;
+    use reqwest::{Client, Error as ReqwestError};
     use tokio::{fs::OpenOptions, io::AsyncReadExt};
 
     #[tokio::test]
@@ -264,6 +265,55 @@ mod tests {
             .expect("failed to read file");
 
         assert_eq!(contents, "hello");
+
+        mock.assert();
+    }
+
+    #[tokio::test]
+    async fn download_error_status() {
+        let mut server = mockito::Server::new_async().await;
+        let expected_status = StatusCode::NOT_FOUND;
+
+        let mock = server
+            .mock("GET", "/404")
+            .with_status(expected_status.as_u16().into())
+            .with_body("not found")
+            .create();
+
+        let retriever = RetrieverBuilder::new()
+            .show_progress(false)
+            .workers(1)
+            .build();
+
+        let req = Client::new()
+            .get(format!("{}/404", server.url()))
+            .build()
+            .expect("failed to build request");
+
+        let file_path = "/tmp/test_error";
+        let file = OpenOptions::new()
+            .create(true)
+            .write(true)
+            .truncate(true)
+            .open(file_path)
+            .await
+            .expect("failed to open file for writing");
+
+        let err = retriever
+            .download_file(req, file)
+            .await
+            .expect_err("expected error on status");
+
+        let reqwest_err = err
+            .downcast_ref::<ReqwestError>()
+            .expect("error should be a reqwest::Error");
+
+        let status = reqwest_err
+            .status()
+            .expect("request error should have a status code");
+
+        assert_eq!(status, expected_status);
+        assert!(reqwest_err.to_string().contains("not found"), "error message should contain response body");
 
         mock.assert();
     }

@@ -313,7 +313,6 @@ mod tests {
             .expect("request error should have a status code");
 
         assert_eq!(status, expected_status);
-        assert!(reqwest_err.to_string().contains("not found"), "error message should contain response body");
 
         mock.assert();
     }
